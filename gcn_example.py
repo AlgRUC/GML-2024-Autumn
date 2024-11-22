@@ -13,7 +13,6 @@ jt.flags.use_cuda = 1
 
 
 dataset = 'roman_empire'
-# dataset='PubMed'
 dataset = HeteroDataset("./data", dataset, transform=T.NormalizeFeatures())
 data = dataset[0]
 
@@ -75,6 +74,5 @@ for run in range(10):
 
 jt.sync_all(True)
 end = time.time()
-# print(end - start)
 print("epoch_time"+str(end-start))
 

@@ -41,12 +41,16 @@ class HeteroDataset(InMemoryDataset):
     def download(self):
         download_url(f'{self.url}/{self.raw_file_names}', self.raw_dir)
 
+
     def process(self, undirected=True):
         data = np.load(self.raw_paths[0])
-
-        x = jt.array(data['node_features'])
-        y = jt.array(data['node_labels'])
-        edge_index = jt.array(data['edges']).transpose()
+        x = np.int32(data['node_features'])
+        y = np.int32(data['node_labels'])
+        
+        edge_index = np.int32(data['edges'])
+        x = jt.array(x)
+        y = jt.array(y)
+        edge_index = jt.array(edge_index).transpose()
 
         if undirected:
             reverse_edges = edge_index.flip(0)
@@ -63,4 +67,4 @@ class HeteroDataset(InMemoryDataset):
         if self.pre_transform is not None:
             data = self.pre_transform(data)
 
-        jt.save(self.collate([data]), self.processed_paths[0])      
+        jt.save(self.collate([data]), self.processed_paths[0]) 
