@@ -44,7 +44,7 @@ class HeteroDataset(InMemoryDataset):
 
     def process(self, undirected=True):
         data = np.load(self.raw_paths[0])
-        x = np.int32(data['node_features'])
+        x = np.float32(data['node_features'])
         y = np.int32(data['node_labels'])
         
         edge_index = np.int32(data['edges'])
