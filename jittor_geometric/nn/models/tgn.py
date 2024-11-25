@@ -91,7 +91,7 @@ def scatter_max(src: jt.Var, index: jt.Var, dim: int = 0, dim_size: Optional[int
 #         min_value = jt.iinfo(src.dtype).min
     
 #     res = jt.full((dim_size,), val=min_value, dtype=src.dtype)
-#     argmax_indices = jt.full((dim_size,), -1, dtype=jt.int64)
+#     argmax_indices = jt.full((dim_size,), -1, dtype=jt.int32)
 
 #     # Iterate over all elements in the src tensor
 #     for i in range(src.shape[0]):
@@ -120,12 +120,12 @@ class TGNMemory(nn.Module):
         self.gru = GRUCell(message_module.out_channels, memory_dim)
 
         # self.memory = jt.empty((num_nodes, memory_dim))
-        # self.last_update = jt.empty((self.num_nodes,), dtype=jt.int64)
-        # self._assoc = jt.empty((num_nodes,), dtype=jt.int64)
+        # self.last_update = jt.empty((self.num_nodes,), dtype=jt.int32)
+        # self._assoc = jt.empty((num_nodes,), dtype=jt.int32)
 
         self.register_buffer('memory', jt.empty(num_nodes, memory_dim))
-        self.register_buffer('last_update', jt.empty(self.num_nodes, dtype=jt.int64))
-        self.register_buffer('_assoc', jt.empty(num_nodes, dtype=jt.int64))
+        self.register_buffer('last_update', jt.empty(self.num_nodes, dtype=jt.int32))
+        self.register_buffer('_assoc', jt.empty(num_nodes, dtype=jt.int32))
 
         self.msg_s_store = {}
         self.msg_d_store = {}
@@ -186,7 +186,7 @@ class TGNMemory(nn.Module):
             self._update_memory(n_id)
 
     def _reset_message_store(self):
-        # i = jt.empty((0,), dtype=jt.int64)
+        # i = jt.empty((0,), dtype=jt.int32)
         # msg = jt.empty((0, self.raw_msg_dim))
         i = self.memory.new_empty((0, ))
         msg = self.memory.new_empty((0, self.raw_msg_dim))
@@ -199,7 +199,7 @@ class TGNMemory(nn.Module):
         self.last_update[n_id] = last_update
 
     def _get_updated_memory(self, n_id: jt.Var) -> Tuple[jt.Var, jt.Var]:
-        self._assoc[n_id] = jt.arange(n_id.shape[0], dtype=jt.int64)
+        self._assoc[n_id] = jt.arange(n_id.shape[0], dtype=jt.int32)
 
         msg_s, t_s, src_s, dst_s = self._compute_msg(n_id, self.msg_s_store,
                                                      self.msg_s_module)
@@ -209,10 +209,6 @@ class TGNMemory(nn.Module):
         msg = jt.concat([msg_s, msg_d], dim=0)
         t = jt.concat([t_s, t_d], dim=0)
         
-        # print('self._assoc[idx]',self._assoc[n_id])
-        # print('self._assoc',self._assoc[:10])
-        # print('idx',idx)
-        # print('self._assoc[idx]',self._assoc[idx])
 
         # aggr = self.aggr_module(msg, self._assoc[idx], t, n_id.shape[0])
         aggr = self.aggr_module(msg, self._assoc[idx], t, n_id.shape[0])
@@ -336,9 +332,9 @@ class LastNeighborLoader:
     def __init__(self, num_nodes: int, size: int):
         self.size = size
 
-        self.neighbors = jt.empty((num_nodes, size), dtype=jt.int64)
-        self.e_id = jt.empty((num_nodes, size), dtype=jt.int64)
-        self._assoc = jt.empty((num_nodes,), dtype=jt.int64)
+        self.neighbors = jt.empty((num_nodes, size), dtype=jt.int32)
+        self.e_id = jt.empty((num_nodes, size), dtype=jt.int32)
+        self._assoc = jt.empty((num_nodes,), dtype=jt.int32)
 
         self.reset_state()
 
@@ -353,7 +349,7 @@ class LastNeighborLoader:
         tmp_n_id = jt.concat([n_id, neighbors])
         # print('n_id, neighbors',n_id, neighbors)
         n_id = jt.unique(tmp_n_id)
-        self._assoc[n_id] = jt.arange(n_id.shape[0], dtype=jt.int64) 
+        self._assoc[n_id] = jt.arange(n_id.shape[0], dtype=jt.int32) 
         neighbors, nodes = self._assoc[neighbors], self._assoc[nodes]
 
         return n_id, jt.stack([neighbors, nodes]), e_id
@@ -362,23 +358,23 @@ class LastNeighborLoader:
     #     neighbors = jt.concat([src, dst], dim=0)
     #     nodes = jt.concat([dst, src], dim=0)
     #     e_id = jt.arange(self.cur_e_id, self.cur_e_id + src.shape[0],
-    #                      dtype=jt.int64).repeat(2)
+    #                      dtype=jt.int32).repeat(2)
     #     self.cur_e_id += src.numel()
     #     nodes, perm = nodes.argsort()
     #     neighbors, e_id = neighbors[perm], e_id[perm]
 
     #     n_id = nodes
     #     n_id = jt.unique(n_id)
-    #     self._assoc[n_id] = jt.arange(n_id.shape[0], dtype=jt.int64).stop_grad()
+    #     self._assoc[n_id] = jt.arange(n_id.shape[0], dtype=jt.int32).stop_grad()
 
-    #     dense_id = jt.arange(nodes.shape[0], dtype=jt.int64) % self.size
+    #     dense_id = jt.arange(nodes.shape[0], dtype=jt.int32) % self.size
     #     dense_id += self._assoc[nodes].mul(self.size)
 
-    #     dense_e_id = jt.full((n_id.shape[0] * self.size,), -1, dtype=jt.int64)
+    #     dense_e_id = jt.full((n_id.shape[0] * self.size,), -1, dtype=jt.int32)
     #     dense_e_id[dense_id] = e_id
     #     dense_e_id = dense_e_id.view(-1, self.size)
 
-    #     dense_neighbors = jt.empty((n_id.shape[0] * self.size,), dtype=jt.int64)
+    #     dense_neighbors = jt.empty((n_id.shape[0] * self.size,), dtype=jt.int32)
     #     dense_neighbors[dense_id] = neighbors
     #     dense_neighbors = dense_neighbors.view(-1, self.size)
         

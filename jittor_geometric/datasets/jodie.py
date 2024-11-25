@@ -39,7 +39,6 @@ class JODIEDataset(InMemoryDataset):
     ):
         self.name = name.lower()
         assert self.name in self.names
-        
         super().__init__(root, transform, pre_transform)
         self.data, self.slices = jt.load(self.processed_paths[0])
         # print('self.processed_paths[0]',self.processed_paths[0])
@@ -68,11 +67,11 @@ class JODIEDataset(InMemoryDataset):
 
         df = pd.read_csv(self.raw_paths[0], skiprows=1, header=None)
 
-        src = jt.array(df.iloc[:, 0].values).to(jt.int64)
-        dst = jt.array(df.iloc[:, 1].values).to(jt.int64)
+        src = jt.array(df.iloc[:, 0].values).to(jt.int32)
+        dst = jt.array(df.iloc[:, 1].values).to(jt.int32)
         dst += int(src.max()) + 1
-        t = jt.array(df.iloc[:, 2].values).to(jt.int64)
-        y = jt.array(df.iloc[:, 3].values).to(jt.int64)
+        t = jt.array(df.iloc[:, 2].values).to(jt.int32)
+        y = jt.array(df.iloc[:, 3].values).to(jt.int32)
         msg = jt.array(df.iloc[:, 4:].values).to(jt.float32)
 
         data = TemporalData(src=src, dst=dst, t=t, msg=msg, y=y)
