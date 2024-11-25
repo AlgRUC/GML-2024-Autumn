@@ -27,7 +27,7 @@
 ### 安装
 
 ```bash
-pip install -r requirements.txt
+conda env create -f jittor_env.yml -n myGML
 ```
 
 ### 使用方法
